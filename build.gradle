@@ -6,6 +6,8 @@ buildscript {
 		jacocoVersion = '0.8.13'
 		pitestVersion = '1.19.0-rc.1'
         lombokVersion = '1.18.38'
+        mapstructureVersion = '1.6.3'
+        openApiVersion = '2.8.11'
 	}
 }
 
@@ -34,4 +36,16 @@ sonar {
     }
 }
 
+jacoco {
+    toolVersion = "0.8.10"
+}
+
+tasks.jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required.set(true)
+        csv.required.set(false)
+        html.required.set(true)
+    }
+}
 apply from: './main.gradle'
