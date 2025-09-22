@@ -6,6 +6,7 @@ import co.com.bancolombia.model.responseToken.ValidationResponse;
 import co.com.bancolombia.usecase.exception.CustomException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -18,10 +19,13 @@ import java.util.Map;
 public class RestConsumer implements UserGateway {
     private final WebClient client;
 
+    @Value("${adapter.restconsumer.url}")
+    private String baseUrl;
+
     @Override
     public Mono<ValidationResponse> validateToken(String token) {
         return client.get()
-                .uri("http://localhost:8081/api/v1/validateToken/reports")
+                .uri(baseUrl + "/api/v1/validateToken/reports")
                 .header(HttpHeaders.AUTHORIZATION, token)
                 .exchangeToMono(response -> {
                     if (response.statusCode().is2xxSuccessful()) {

@@ -1,0 +1,36 @@
+app:
+  ports:
+    - "8082:8082"
+
+spring:
+  application:
+    name: Reportes_retoPragma
+
+adapter:
+  restconsumer:
+    timeout: 5000
+    url: http://authentication-app:8081
+
+  sqs:
+    region: "us-east-2"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+entrypoint:
+  sqs:
+    region: "us-east-2"
+    queueUrl: "https://sqs.us-east-2.amazonaws.com/551647579158/approved-loan-review"
+    waitTimeSeconds: 20
+    maxNumberOfMessages: 10
+    visibilityTimeoutSeconds: 10
+    numberOfThreads: 1
+
+
