@@ -29,21 +29,20 @@ public class SQSProcessor implements Function<Message, Mono<Void>> {
                     .build();
             JsonNode root = mapper.readTree(body);
 
-            String metrica = root.path("metrical").asText(null);
+            String metrical = root.path("metrical").asText(null);
             BigDecimal amountApproved = root.path("amount").isMissingNode() || root.path("amount").isNull()
                     ? null
                     : new BigDecimal(root.path("amount").asText());
 
-            if (metrica == null || amountApproved == null) {
-                return Mono.error(new IllegalArgumentException("Payload inválido: se requieren 'metrica' y 'monto'"));
-            }
+            if (metrical == null || amountApproved == null)
+                return Mono.error(new IllegalArgumentException("Payload inválido: se requiere 'metrical' y 'monto'"));
 
             Report report = Report.builder()
-                    .metrica(metrica)
+                    .metrica(metrical)
                     .valor(amountApproved)
                     .build();
 
-            return reportUseCase.actualizarReporte(report.getValor()).then();
+            return reportUseCase.updateReport(report.getValor()).then();
         } catch (Exception e) {
             return Mono.error(e);
         }

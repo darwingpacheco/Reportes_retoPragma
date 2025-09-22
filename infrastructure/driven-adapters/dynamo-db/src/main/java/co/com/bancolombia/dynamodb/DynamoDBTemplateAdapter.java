@@ -31,7 +31,6 @@ public class DynamoDBTemplateAdapter implements ReportRepository {
     private final DynamoDbEnhancedAsyncClient enhanced;
     private final ObjectMapper mapper;
     private final String tableName;
-    private final String indexName;
     private final String singlePk;
 
     public DynamoDBTemplateAdapter(
@@ -39,14 +38,12 @@ public class DynamoDBTemplateAdapter implements ReportRepository {
             DynamoDbEnhancedAsyncClient enhanced,
             ObjectMapper mapper,
             @Value("${app.dynamo.table}") String table,
-            @Value("${app.dynamo.gsi:}") String gsi,
             @Value("${app.dynamo.pk}") String pk
     ) {
         this.ddb = ddb;
         this.enhanced = enhanced;
         this.mapper = mapper;
         this.tableName = table;
-        this.indexName = gsi;
         this.singlePk = pk;
     }
 
@@ -55,13 +52,13 @@ public class DynamoDBTemplateAdapter implements ReportRepository {
     }
 
     @Override
-    public Mono<Void> actualizarReporte(BigDecimal monto) {
-        if (monto == null) {
-            log.error("[DynamoDB] actualizarReporte falló: monto=null");
+    public Mono<Void> updateReportDynamo(BigDecimal amount) {
+        if (amount == null) {
+            log.error("fallo actualización de reporte en dynamo: amount=null");
             return Mono.error(new IllegalArgumentException("approvedAmountCents no puede ser null"));
         }
 
-        log.info("[DynamoDB] Actualizando reporte en tabla={} pk={} monto={}", tableName, singlePk, monto);
+        log.info("Se procede a actualizar reporte en tabla={} pk={} amount={}", tableName, singlePk, amount);
 
         var key = Map.of("reportId", AttributeValue.builder().s(singlePk).build());
 
@@ -83,42 +80,42 @@ public class DynamoDBTemplateAdapter implements ReportRepository {
                         ":zero",   AttributeValue.builder().n("0").build(),
                         ":one",    AttributeValue.builder().n("1").build(),
                         ":zeroDec",AttributeValue.builder().n("0").build(),
-                        ":amount", AttributeValue.builder().n(monto.stripTrailingZeros().toPlainString()).build(),
+                        ":amount", AttributeValue.builder().n(amount.stripTrailingZeros().toPlainString()).build(),
                         ":now",    AttributeValue.builder().s(java.time.Instant.now().toString()).build()
                 ))
                 .build();
 
-        log.debug("[DynamoDB] UpdateItemRequest={}", req);
+        log.debug("UpdateItemRequest={}", req);
 
         return Mono.fromFuture(ddb.updateItem(req))
-                .doOnSuccess(resp -> log.info("[DynamoDB] Reporte actualizado con éxito. pk={}", singlePk))
-                .doOnError(e -> log.error("[DynamoDB] Error actualizando reporte pk={} error={}", singlePk, e.toString()))
+                .doOnSuccess(resp -> log.info("Reporte actualizado con exito en DynamoDB. pk={}", singlePk))
+                .doOnError(e -> log.error("Error actualizando reporte pk={} error={}", singlePk, e.toString()))
                 .then();
     }
 
     @Override
-    public Mono<Report> obtenerReporte() {
+    public Mono<Report> obtainReportDynamo() {
         Key key = Key.builder().partitionValue(singlePk).build();
 
-        log.info("[DynamoDB] Consultando reporte en tabla={} pk={}", tableName, singlePk);
+        log.info("Se pasa a traer reporte en Dynamo con tabla={} pk={}", tableName, singlePk);
 
         return Mono.fromFuture(table().getItem(r -> r.key(key).consistentRead(true)))
                 .doOnNext(item -> {
-                    if (item == null) {
-                        log.warn("[DynamoDB] No se encontró reporte con pk={}", singlePk);
-                    } else {
-                        log.debug("[DynamoDB] Item recibido: {}", item);
-                    }
+                    if (item == null)
+                        log.warn("No se encontró reporte con pk={}", singlePk);
+                    else
+                        log.debug("Item recibido: {}", item);
                 })
                 .flatMap(e -> {
-                    if (e == null) return Mono.empty();
-                    Report reporte = Report.builder()
-                            .metrica(e.getCount() == null ? null : String.valueOf(e.getCount()))
+                    if (e == null)
+                        return Mono.empty();
+                    Report reportObtain = Report.builder()
+                            .metrica(e.getCount() == null ? "" : String.valueOf(e.getCount()))
                             .valor(e.getTotalAmountCents())
                             .build();
-                    log.info("[DynamoDB] Reporte obtenido: metrica={}, valor={}", reporte.getMetrica(), reporte.getValor());
-                    return Mono.just(reporte);
+                    log.info("Reporte obtenido: metrica={}, valor={}", reportObtain.getMetrica(), reportObtain.getValor());
+                    return Mono.just(reportObtain);
                 })
-                .doOnError(e -> log.error("[DynamoDB] Error obteniendo reporte pk={} error={}", singlePk, e.toString()));
+                .doOnError(e -> log.error("Error obteniendo reporte pk={} error={}", singlePk, e.toString()));
     }
 }

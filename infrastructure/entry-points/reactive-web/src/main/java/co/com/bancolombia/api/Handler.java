@@ -20,7 +20,7 @@ public class Handler {
 
         String token = serverRequest.headers().firstHeader("Authorization");
 
-        return reportUseCase.obtenerReporte(token)
+        return reportUseCase.obtainReport(token)
                 .map(ReportMapperDTO::toDto)
                 .flatMap(dto -> ServerResponse.ok().bodyValue(dto))
                 .switchIfEmpty(ServerResponse.noContent().build());

@@ -5,7 +5,6 @@ import co.com.bancolombia.model.exceptionApi.ApiError;
 import co.com.bancolombia.model.gateways.ReportRepository;
 import co.com.bancolombia.model.gateways.UserGateway;
 import co.com.bancolombia.usecase.ReportUseCase;
-import co.com.bancolombia.usecase.exception.ConflictException;
 import co.com.bancolombia.usecase.exception.CustomException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,12 +41,12 @@ public class ReportUseCaseTest {
 
     @Test
     void actualizarReporte_debeEjecutarseConExito() {
-        when(reportRepository.actualizarReporte(validMonto)).thenReturn(Mono.empty());
+        when(reportRepository.updateReportDynamo(validMonto)).thenReturn(Mono.empty());
 
-        StepVerifier.create(reportUseCase.actualizarReporte(validMonto))
+        StepVerifier.create(reportUseCase.updateReport(validMonto))
                 .verifyComplete();
 
-        verify(reportRepository).actualizarReporte(validMonto);
+        verify(reportRepository).updateReportDynamo(validMonto);
     }
 
     @Test
@@ -59,15 +58,15 @@ public class ReportUseCaseTest {
                 .build();
 
         when(userGateway.validateToken(token)).thenReturn(Mono.empty());
-        when(reportRepository.obtenerReporte()).thenReturn(Mono.just(reporte));
+        when(reportRepository.obtainReportDynamo()).thenReturn(Mono.just(reporte));
 
-        StepVerifier.create(reportUseCase.obtenerReporte(token))
+        StepVerifier.create(reportUseCase.obtainReport(token))
                 .expectNextMatches(r -> r.getMetrica().equals("10") &&
                         r.getValor().compareTo(BigDecimal.valueOf(1000000)) == 0)
                 .verifyComplete();
 
         verify(userGateway).validateToken(token);
-        verify(reportRepository).obtenerReporte();
+        verify(reportRepository).obtainReportDynamo();
     }
 
     @Test
@@ -85,9 +84,9 @@ public class ReportUseCaseTest {
         when(userGateway.validateToken(eq(token))).thenReturn(Mono.error(exception));
 
         // Muy importante: evitar que repository.obtenerReporte() sea null
-        when(reportRepository.obtenerReporte()).thenReturn(Mono.just(new Report())); // <- necesario aunque no se llame
+        when(reportRepository.obtainReportDynamo()).thenReturn(Mono.just(new Report())); // <- necesario aunque no se llame
 
-        StepVerifier.create(reportUseCase.obtenerReporte(token))
+        StepVerifier.create(reportUseCase.obtainReport(token))
                 .expectErrorSatisfies(error -> {
                     assertTrue(error instanceof CustomException);
                     assertEquals("Token inválido", error.getMessage());
