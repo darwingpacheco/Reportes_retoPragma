@@ -18,7 +18,9 @@ public class Handler {
     public Mono<ServerResponse> listenGETReports(ServerRequest serverRequest) {
         log.info("Se ingresa en listenGETReport");
 
-        return reportUseCase.obtenerReporte()
+        String token = serverRequest.headers().firstHeader("Authorization");
+
+        return reportUseCase.obtenerReporte(token)
                 .map(ReportMapperDTO::toDto)
                 .flatMap(dto -> ServerResponse.ok().bodyValue(dto))
                 .switchIfEmpty(ServerResponse.noContent().build());

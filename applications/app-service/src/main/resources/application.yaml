@@ -7,7 +7,6 @@ spring:
     add-properties: false
     restart:
       enabled: false
-
   h2:
     console:
       enabled: true
@@ -29,17 +28,16 @@ app:
     table: "reports_approved"
     gsi: "metricId-updateAt-index"
     pk: "reporte-global"
-
 management:
   endpoints:
     web:
       exposure:
         include: "health,info,prometheus"
-      base-path: '/actuator'
+      base-path: "/actuator"
   endpoint:
     health:
-      show-details: always
-      show-components: always
+      show-details: "always"
+      show-components: "always"
       probes:
         enabled: true
   health:
@@ -47,13 +45,38 @@ management:
       enabled: true
     diskspace:
       enabled: true
-
+    circuitbreakers:
+      enabled: true
 cors:
   allowed-origins: "http://localhost:4200,http://localhost:8080"
-
 springdoc:
   api-docs:
     enabled: true
   swagger-ui:
     enabled: true
     path: "/swagger-ui.html"
+adapter:
+  restconsumer:
+    timeout: 5000
+    url: "http://localhost:8080"
+resilience4j:
+  circuitbreaker:
+    instances:
+      testGet:
+        registerHealthIndicator: true
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: "2s"
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 10
+        waitDurationInOpenState: "10s"
+      testPost:
+        registerHealthIndicator: true
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: "2s"
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 10
+        waitDurationInOpenState: "10s"
