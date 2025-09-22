@@ -1,0 +1,59 @@
+server:
+  port: 8082
+spring:
+  application:
+    name: "Reportes_retoPragma"
+  devtools:
+    add-properties: false
+    restart:
+      enabled: false
+
+  h2:
+    console:
+      enabled: true
+      path: "/h2"
+  profiles:
+    include: null
+entrypoint:
+  sqs:
+    region: "us-east-2"
+    queueUrl: "https://sqs.us-east-2.amazonaws.com/551647579158/approved-loan-review"
+    waitTimeSeconds: 20
+    maxNumberOfMessages: 10
+    visibilityTimeoutSeconds: 10
+    numberOfThreads: 1
+aws:
+  region: "us-east-2"
+app:
+  dynamo:
+    table: "reports_approved"
+    gsi: "metricId-updateAt-index"
+    pk: "reporte-global"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,prometheus"
+      base-path: '/actuator'
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
+  health:
+    db:
+      enabled: true
+    diskspace:
+      enabled: true
+
+cors:
+  allowed-origins: "http://localhost:4200,http://localhost:8080"
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: "/swagger-ui.html"
